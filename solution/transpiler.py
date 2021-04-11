@@ -31,8 +31,6 @@ UNITARY_STR = 'unitary'
 COMPILER_STR = 'compiler'
 WRITER_STR = 'openql'
 
-RANDOM_UNITARY_QISKIT_OPTIMIZATION_CUTOFF = 7
-
 
 def _make_tmp_dir():
     dir_path = Path(TMP_DIR, DIR_FN)
@@ -242,11 +240,11 @@ def random_decompose(n_qubits, unitary):
     _openql_compile(DIR_PATH, CONFIG_PATH, n_qubits, unitary)
     qasm_string = _rewrite_openql_qasm(DIR_PATH, n_qubits)
     qasm_string = _invert_qubit_order(n_qubits, DIR_PATH, RAW_QASM_FN, IR0_QASM_FN)
+    
+    response_circuit = _make_response_circuit(n_qubits, qasm_string)
+    response_circuit = _initial_transpile(response_circuit)
 
-    if n_qubits <= RANDOM_UNITARY_QISKIT_OPTIMIZATION_CUTOFF:
-        response_circuit = _make_response_circuit(n_qubits, qasm_string)
-        response_circuit = _initial_transpile(response_circuit)
-        qasm_string = response_circuit.qasm(filename=Path(DIR_PATH, IR1_QASM_FN))
+    qasm_string = response_circuit.qasm(filename=Path(DIR_PATH, IR1_QASM_FN))
 
     return circuit_from_qasm(qasm_string)
 
@@ -362,24 +360,15 @@ class Binman():
 
 
 def cirq_optimize(n_qubits, circuit, gqm, target='small_unitary'):
-    if target == 'xmon':
-        optm_circuit = cirq.google.optimized_for_sycamore(
-            circuit,
-            qubit_map=gqm.mapping,
-            optimizer_type='xmon'
-        )
+    if target == 'basic':
+        optm_circuit = circuit.transform_qubits(gqm.mapping)
     elif target == 'small_unitary':
-        ir_circuit = cirq.google.optimized_for_sycamore(
-            circuit,
-            qubit_map=gqm.mapping,
-            optimizer_type='xmon'
-        )
+        ir_circuit = circuit.transform_qubits(gqm.mapping)
         bm = Binman(ir_circuit.all_qubits())
         for op in ir_circuit.all_operations():
             bm.process_op(op)
         bm.close_all_bins()
         optm_circuit = bm.output_circuit()
-
     elif target == 'sycamore':
         ir_circuit = _topology_rewrite(circuit, gqm)
         optm_circuit = cirq.google.optimized_for_sycamore(
@@ -399,16 +388,16 @@ def cirq_optimize(n_qubits, circuit, gqm, target='small_unitary'):
         optm_circuit = cirq.Circuit(SmallUnitary(n_qubits, circuit.unitary()).on(*gqm.grid_qubits))
     elif target == 'adaptive':
         process = lambda target: cirq_optimize(n_qubits, circuit, gqm, target=target)
-        x_circ, f_circ, s_circ = Parallel(n_jobs=3)(delayed(process)(target) for target in ['small_unitary', 'fake_sycamore', 'sycamore'])
-        # x_circ = process('small_unitary')
+        u_circ, f_circ, s_circ = Parallel(n_jobs=3)(delayed(process)(target) for target in ['small_unitary', 'fake_sycamore', 'sycamore'])
+        # u_circ = process('small_unitary')
         # f_circ = process('fake_sycamore')
         # s_circ = process('sycamore')
         if n_two_qubit_gates(s_circ) < lb_two_qubit_gates(n_qubits):
             optm_circuit = s_circ
-        elif n_two_qubit_gates(f_circ) < lb_two_qubit_gates(n_qubits) and n_two_qubit_gates(x_circ) < lb_two_qubit_gates(n_qubits):
+        elif n_two_qubit_gates(f_circ) < lb_two_qubit_gates(n_qubits) and n_two_qubit_gates(u_circ) < lb_two_qubit_gates(n_qubits):
             optm_circuit = f_circ
         else:
-            optm_circuit = x_circ
+            optm_circuit = u_circ
     elif target == 'small+adaptive':
         process = lambda target: cirq_optimize(n_qubits, circuit, gqm, target=target)
         a_circ = process('adaptive')
