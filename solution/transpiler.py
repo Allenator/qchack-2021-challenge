@@ -240,11 +240,11 @@ def random_decompose(n_qubits, unitary):
     _openql_compile(DIR_PATH, CONFIG_PATH, n_qubits, unitary)
     qasm_string = _rewrite_openql_qasm(DIR_PATH, n_qubits)
     qasm_string = _invert_qubit_order(n_qubits, DIR_PATH, RAW_QASM_FN, IR0_QASM_FN)
-    
-    response_circuit = _make_response_circuit(n_qubits, qasm_string)
-    response_circuit = _initial_transpile(response_circuit)
 
-    qasm_string = response_circuit.qasm(filename=Path(DIR_PATH, IR1_QASM_FN))
+    if n_qubits <= 7:
+        response_circuit = _make_response_circuit(n_qubits, qasm_string)
+        response_circuit = _initial_transpile(response_circuit)
+        qasm_string = response_circuit.qasm(filename=Path(DIR_PATH, IR1_QASM_FN))
 
     return circuit_from_qasm(qasm_string)
 
