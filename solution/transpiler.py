@@ -31,6 +31,8 @@ UNITARY_STR = 'unitary'
 COMPILER_STR = 'compiler'
 WRITER_STR = 'openql'
 
+RANDOM_UNITARY_QISKIT_OPTIMIZATION_CUTOFF = 7
+
 
 def _make_tmp_dir():
     dir_path = Path(TMP_DIR, DIR_FN)
@@ -241,7 +243,7 @@ def random_decompose(n_qubits, unitary):
     qasm_string = _rewrite_openql_qasm(DIR_PATH, n_qubits)
     qasm_string = _invert_qubit_order(n_qubits, DIR_PATH, RAW_QASM_FN, IR0_QASM_FN)
 
-    if n_qubits <= 7:
+    if n_qubits <= RANDOM_UNITARY_QISKIT_OPTIMIZATION_CUTOFF:
         response_circuit = _make_response_circuit(n_qubits, qasm_string)
         response_circuit = _initial_transpile(response_circuit)
         qasm_string = response_circuit.qasm(filename=Path(DIR_PATH, IR1_QASM_FN))
