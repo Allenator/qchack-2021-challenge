@@ -365,7 +365,7 @@ def cirq_optimize(n_qubits, circuit, gqm, target='small_unitary'):
             circuit,
             qubit_map=gqm.mapping,
             optimizer_type='xmon'
-        ),
+        )
     elif target == 'small_unitary':
         ir_circuit = cirq.google.optimized_for_sycamore(
             circuit,
