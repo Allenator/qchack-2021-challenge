@@ -1,0 +1,3 @@
+qutechopenql==0.8.1.dev4
+qiskit==0.25.0
+joblib==1.0.1

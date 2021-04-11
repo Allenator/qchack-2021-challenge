@@ -3,6 +3,9 @@ from typing import List, Tuple
 import numpy as np
 import cirq
 
+from solution.transpiler import *
+from solution.utils import *
+
 
 def matrix_to_sycamore_operations(
     target_qubits: List[cirq.GridQubit], matrix: np.ndarray
@@ -27,4 +30,32 @@ def matrix_to_sycamore_operations(
                 an empty list.
         .
     """
-    return NotImplemented, []
+    
+    RANDOM_UNITARY_SMALL_CUTOFF = 2
+    RANDOM_UNITARY_ADAPTIVE_CUTOFF = 6
+
+    n_qubits = len(target_qubits)
+    gqm = GridQubitMap(n_qubits, grid_qubits=target_qubits)
+
+    if is_identity(matrix):
+        return [], []
+    
+    elif is_incrementer(matrix):
+        response_circuit = incrementer_decompose(n_qubits, matrix)
+        optm_circuit = cirq_optimize(n_qubits, response_circuit, gqm, target='adaptive')
+        return list(optm_circuit.all_operations()), []
+    
+    elif is_diagonal(matrix):
+        response_circuit = diagonal_decompose(n_qubits, matrix)
+        optm_circuit = cirq_optimize(n_qubits, response_circuit, gqm, target='adaptive')
+        return list(optm_circuit.all_operations()), []
+
+    else:
+        response_circuit = random_decompose(n_qubits, matrix)
+        if n_qubits <= RANDOM_UNITARY_SMALL_CUTOFF:
+            optm_circuit = cirq_optimize(n_qubits, response_circuit, gqm, target='small+adaptive')
+        elif n_qubits <= RANDOM_UNITARY_ADAPTIVE_CUTOFF:
+            optm_circuit = cirq_optimize(n_qubits, response_circuit, gqm, target='adaptive')
+        else:
+            optm_circuit = cirq_optimize(n_qubits, response_circuit, gqm, target='small_unitary')
+        return list(optm_circuit.all_operations()), []
