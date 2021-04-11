@@ -135,18 +135,8 @@ def _invert_qubit_order(n_qubits, dir_path, input_fn, output_fn):
 
 
 def _make_response_circuit(n_qubits, response_qasm_string):
-    # expected_circ = QuantumCircuit(n_qubits)
-    # expected_circ.unitary(expected_unitary, range(n_qubits))
     response_circuit = QuantumCircuit.from_qasm_str(response_qasm_string)
 
-    # expected_sv = np.array(Statevector.from_instruction(expected_circ))
-    # response_sv = np.array(Statevector.from_instruction(response_circ))
-
-    # mean_phase_diff = np.angle(np.average(expected_sv / response_sv))
-
-    # for i in range(n_qubits):
-    #     _global_phase_gate(response_circ, mean_phase_diff / 4, i)
-    
     return response_circuit
 
 
@@ -215,8 +205,6 @@ def incrementer_decompose(n_qubits, unitary):
     
     response_circuit = _initial_transpile(response_circuit)
     qasm_string = response_circuit.qasm(filename=Path(DIR_PATH, IR0_QASM_FN))
-
-    # print(response_circuit.draw())
 
     qasm_string = _invert_qubit_order(n_qubits, DIR_PATH, IR0_QASM_FN, IR1_QASM_FN)
 
@@ -389,9 +377,6 @@ def cirq_optimize(n_qubits, circuit, gqm, target='small_unitary'):
     elif target == 'adaptive':
         process = lambda target: cirq_optimize(n_qubits, circuit, gqm, target=target)
         u_circ, f_circ, s_circ = Parallel(n_jobs=3)(delayed(process)(target) for target in ['small_unitary', 'fake_sycamore', 'sycamore'])
-        # u_circ = process('small_unitary')
-        # f_circ = process('fake_sycamore')
-        # s_circ = process('sycamore')
         if n_two_qubit_gates(s_circ) < lb_two_qubit_gates(n_qubits):
             optm_circuit = s_circ
         elif n_two_qubit_gates(f_circ) < lb_two_qubit_gates(n_qubits) and n_two_qubit_gates(u_circ) < lb_two_qubit_gates(n_qubits):
