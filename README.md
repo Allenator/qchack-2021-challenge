@@ -5,9 +5,9 @@ Allen Mi - Apr. 11, 2021
 ## Dependencies
 
 ```python
-qutechopenql==0.8.1.dev4
-qiskit==0.25.0
-joblib==1.0.1
+cirq==0.11.0.dev20210321221345
+pytest
+pytest-watch
 
 qutechopenql==0.8.1.dev4
 qiskit==0.25.0
