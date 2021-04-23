@@ -2,6 +2,8 @@
 
 Allen Mi - Apr. 11, 2021
 
+*Winner - QCHack 2021 Google Challenge*
+
 ## Dependencies
 
 ```python
